@@ -6,13 +6,11 @@ from urllib.parse import urlparse
 from urllib.parse import parse_qsl
 import sqlite3
 import pandas as pd
+import os
 
-if __debug__:
-    conn = sqlite3.connect('notice_test.db')
-else:
-    conn = sqlite3.connect('notice.db')
-conn.row_factory = lambda cursor, row: row[0]  # fetchall시 튜플로 나오는 현상 방지
-cur = conn.cursor()
+abspath = os.path.abspath(__file__)
+dname = os.path.dirname(abspath)
+os.chdir(dname)
 
 def is_date(string):
     format = "%Y-%m-%d"
@@ -128,21 +126,28 @@ def coi_notice():
 
 
 if __name__ == '__main__':
+    #DB 연결 및 테이블 생성
+    if __debug__:
+        conn = sqlite3.connect('notice_test.db')
+    else:
+        conn = sqlite3.connect('notice.db')
+    conn.row_factory = lambda cursor, row: row[0]  # fetchall시 튜플로 나오는 현상 방지
+    cur = conn.cursor()
+    try:
+        cur.execute('''CREATE TABLE posts(id INT, title TEXT, link TEXT, cat TEXT, date TEXT, UNIQUE(id, cat))''')
+    except:
+        pass
+
+    #텔레그램 봇 초기화
     with open('token.ini', 'r') as f:
         my_token = f.read() # 토큰을 설정해 줍니다.
     bot = telegram.Bot(token=my_token)  # 봇에 연결합니다.
-
     if __debug__:
         with open('id_test.txt', 'r') as f:
             id = int(f.read())
     else:
         with open('id.txt', 'r') as f:
             id = int(f.read())
-
-    try:
-        cur.execute('''CREATE TABLE posts(id INT, title TEXT, link TEXT, cat TEXT, date TEXT, UNIQUE(id, cat))''')
-    except:
-        pass
 
     try:
         dorm_notice_init()
