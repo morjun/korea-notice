@@ -112,17 +112,68 @@ def tel_bot(cat, title, link, date):
 
     bot.sendMessage(chat_id=id, text=text, parse_mode="html")
 
-
-def coi_notice():
+def coi_notice_init():
     URL_GENERAL = 'https://info.korea.ac.kr/info/board/notice_under.do'
     URL_EVENT ='https://info.korea.ac.kr/info/board/news.do'
     URL_CAREER = 'https://info.korea.ac.kr/info/board/course.do'
+    coi_list = {URL_GENERAL:'coi_notice', URL_EVENT:'coi_event', URL_CAREER:'coi_career'}
+    for coi_key in coi_list.keys():
+        coi_notice(coi_key,coi_list[coi_key])
 
-    response = get_request(URL_GENERAL)
+
+def coi_notice(url, cat):
+    category = {'coi_notice':'정보대학 - 공지사항', 'coi_event':'정보대학 - 행사 및 소식', 'coi_career':'정보대학 - 진로정보'}
+
+    response = get_request(url)
     soup = BeautifulSoup(response.content, "html.parser")
     li_list = soup.select('#jwxe_main_content > div > div > div > div.t_list.test20200330 > ul > li')
-    if __debug__:
-        print(f"li_list: {li_list}")
+
+    # if __debug__:
+    #     print(f"li_list: {li_list}")
+    for li in li_list:
+        span = li.find('span') #find: 첫번쨰 occurence만 단일 객체로 반환
+        # if __debug__:
+        #     print(f"span: {span}")
+        span.i.extract() #i 태그 제외
+        date = str(span.text)
+        date = date.replace('.','-')
+        if __debug__:
+            print(f"날짜: {date}")
+
+        a = li.find('a')
+        title = a.text
+        # if __debug__:
+        #     print(f'a: {a}')
+        href = a.get('href')
+        href_parsed = parse_qsl(href)
+        # if __debug__:
+        #     print(f'href: {href_parsed}')
+        link = (url+href)
+        if __debug__:
+            print(f'링크: {link}')
+
+        post_id = int(href_parsed[1][1])
+        if __debug__:
+            print(f'post_id: {post_id}')
+
+        if __debug__:
+            print(f'제목: {title}')
+
+        try:
+            if post_id:
+                cur.execute(f'''SELECT id FROM posts WHERE cat = '{cat}' ''')  # 테이블에서 데이터 선택하기
+                ids = cur.fetchall()
+                print(ids)
+                if post_id not in ids:
+                    tel_bot(category[cat],title,link,date)
+                    cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
+                                (post_id, title, link, cat, date))
+                else:
+                    if __debug__:
+                        print(f"id {post_id} 중복")
+                post_id = 0 #이전 id 초기화
+        except NameError: #post_id를 가져오지 못 했을 때
+            pass
 
 
 if __name__ == '__main__':
@@ -152,10 +203,10 @@ if __name__ == '__main__':
     try:
         dorm_notice_init()
         if __debug__:
-            coi_notice()
+            coi_notice_init()
             link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
             link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
-            tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
+            # tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
             # display_data = pd.read_sql_query("SELECT * FROM dorm", conn)
             # print(display_data)
     finally:
