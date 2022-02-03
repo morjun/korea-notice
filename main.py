@@ -87,7 +87,7 @@ def post_id_validate(category, post):
     # print(f"SELECT id FROM posts WHERE cat = '{post[3]}' AND id = {post[0]}")
     id = cur.fetchone()
     if id is None: #데이터베이스에 id가 없을 경우
-        # tel_bot(category[post[3]], post[1], post[2], post[4])
+        tel_bot(category[post[3]], post[1], post[2], post[4])
         cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
                     (post[0], post[1], post[2], post[3], post[4]))
     else:
