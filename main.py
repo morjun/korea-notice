@@ -40,8 +40,8 @@ def dorm_notice_init():
 
 def get_post_id_from_javascript(href):
     post_id = int(href.split("'")[1])
-    if __debug__:
-        print(f"id: {post_id}")
+    # if __debug__:
+    #     print(f"post_id: {post_id}")
     return post_id
 
 def dorm_notice(url, cat):
@@ -55,8 +55,8 @@ def dorm_notice(url, cat):
 
     for tr in tr_list: #각 게시글 당
         td_list = tr.select('td') #td 리스트 생성
-        if __debug__:
-            print(f'td_list: {td_list}')
+        # if __debug__:
+        #     print(f'td_list: {td_list}')
         for td in td_list:
             # 글 제목, id, 링크 가져오기
             a = td.find('a')
@@ -72,24 +72,28 @@ def dorm_notice(url, cat):
             #게시일 가져오기
             if is_date(td.text):
                 date = td.text
-                if __debug__:
-                    print(f'날짜: {td.text}')
+
 
         try:
             if post_id:
-                cur.execute(f'''SELECT id FROM posts WHERE cat = '{cat}' ''')  # 테이블에서 데이터 선택하기
-                ids = cur.fetchall()
-                if post_id not in ids:
-                    tel_bot(category[cat],title,link,date)
-                    cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
-                                (post_id, title, link, cat, date))
-                else:
-                    if __debug__:
-                        print(f"id {post_id} 중복")
-            post_id = 0 #이전 id 초기화
+                post = [post_id, title, link, cat ,date]
+                print_info(post)
+                post_id = post_id_validate(category, post) #이전 id 초기화
         except NameError: #post_id를 가져오지 못 했을 때
             pass
 
+def post_id_validate(category, post):
+    cur.execute(f'''SELECT id FROM posts WHERE cat = '{post[3]}' AND id = {post[0]} ''')  # 테이블에서 데이터 선택하기
+    # print(f"SELECT id FROM posts WHERE cat = '{post[3]}' AND id = {post[0]}")
+    id = cur.fetchone()
+    if id is None: #데이터베이스에 id가 없을 경우
+        # tel_bot(category[post[3]], post[1], post[2], post[4])
+        cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
+                    (post[0], post[1], post[2], post[3], post[4]))
+    else:
+        if __debug__:
+            print(f"id {post[0]} 중복")
+    return 0
 
 
 def tel_bot(cat, title, link, date):
@@ -137,43 +141,46 @@ def coi_notice(url, cat):
         span.i.extract() #i 태그 제외
         date = str(span.text)
         date = date.replace('.','-')
-        if __debug__:
-            print(f"날짜: {date}")
 
         a = li.find('a')
         title = a.text
         # if __debug__:
         #     print(f'a: {a}')
+
         href = a.get('href')
         href_parsed = parse_qsl(href)
         # if __debug__:
         #     print(f'href: {href_parsed}')
         link = (url+href)
-        if __debug__:
-            print(f'링크: {link}')
 
         post_id = int(href_parsed[1][1])
-        if __debug__:
-            print(f'post_id: {post_id}')
-
-        if __debug__:
-            print(f'제목: {title}')
 
         try:
             if post_id:
-                cur.execute(f'''SELECT id FROM posts WHERE cat = '{cat}' ''')  # 테이블에서 데이터 선택하기
-                ids = cur.fetchall()
-                print(ids)
-                if post_id not in ids:
-                    tel_bot(category[cat],title,link,date)
-                    cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
-                                (post_id, title, link, cat, date))
-                else:
-                    if __debug__:
-                        print(f"id {post_id} 중복")
-                post_id = 0 #이전 id 초기화
+                post = [post_id, title, link, cat, date]
+                if __debug__:
+                    print_info(post)
+                post_id = post_id_validate(category, post)
+        #         cur.execute(f'''SELECT id FROM posts WHERE cat = '{cat}' ''')  # 테이블에서 데이터 선택하기
+        #         ids = cur.fetchall()
+        #         print(ids)
+        #         if post_id not in ids:
+        #             tel_bot(category[cat],title,link,date)
+        #             cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
+        #                         (post_id, title, link, cat, date))
+        #         else:
+        #             if __debug__:
+        #                 print(f"id {post_id} 중복")
+        #         post_id = 0 #이전 id 초기화
         except NameError: #post_id를 가져오지 못 했을 때
             pass
+
+def print_info(post):
+    print(f'''post_id: {post[0]}
+제목: {post[1]}
+링크: {post[2]}
+날짜: {post[4]}
+카테고리: {post[3]}''')
 
 
 if __name__ == '__main__':
@@ -182,7 +189,7 @@ if __name__ == '__main__':
         conn = sqlite3.connect('notice_test.db')
     else:
         conn = sqlite3.connect('notice.db')
-    conn.row_factory = lambda cursor, row: row[0]  # fetchall시 튜플로 나오는 현상 방지
+    # conn.row_factory = lambda cursor, row: row[0]  # fetchall시 튜플로 나오는 현상 방지
     cur = conn.cursor()
     try:
         cur.execute('''CREATE TABLE posts(id INT, title TEXT, link TEXT, cat TEXT, date TEXT, UNIQUE(id, cat))''')
@@ -207,8 +214,8 @@ if __name__ == '__main__':
             link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
             link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
             # tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
-            # display_data = pd.read_sql_query("SELECT * FROM dorm", conn)
-            # print(display_data)
+            display_data = pd.read_sql_query("SELECT * FROM posts", conn)
+            print(display_data)
     finally:
         conn.commit()
         conn.close()
