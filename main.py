@@ -1,17 +1,22 @@
 import telegram
 import requests
 from bs4 import BeautifulSoup
+import datetime
 from dateutil.parser import parse
 from urllib.parse import urlparse
 from urllib.parse import parse_qsl
 import sqlite3
 import pandas as pd
 
-conn = sqlite3.connect('notice.db')
+if __debug__:
+    conn = sqlite3.connect('notice_test.db')
+else:
+    conn = sqlite3.connect('notice.db')
 conn.row_factory = lambda cursor, row: row[0]  # fetchall시 튜플로 나오는 현상 방지
 cur = conn.cursor()
 
-def is_date(string, fuzzy=False):
+def is_date(string):
+    format = "%Y-%m-%d"
     """
     Return whether the string can be interpreted as a date.
 
@@ -19,7 +24,9 @@ def is_date(string, fuzzy=False):
     :param fuzzy: bool, ignore unknown tokens in string if True
     """
     try:
-        parse(string, fuzzy=fuzzy)
+        # date = parse(string, fuzzy=fuzzy)
+        datetime.datetime.strptime(string, format)
+        # print(f"parsed date: {}")
         return True
 
     except ValueError:
@@ -33,7 +40,7 @@ def get_request(url):
 
 def dorm_notice_init():
     try:
-        cur.execute('''CREATE TABLE dorm(id INT, title TEXT, link TEXT, cat TEXT, date TEXT, UNIQUE(id, cat))''')
+        cur.execute('''CREATE TABLE posts(id INT, title TEXT, link TEXT, cat TEXT, date TEXT, UNIQUE(id, cat))''')
     except:
         pass
 
@@ -47,7 +54,7 @@ def post_id_from_javascript(href):
     # post_id = int(post_id_str.split("'")[0])
     post_id = int(href.split("'")[1])
     if __debug__:
-        print(post_id)
+        print(f"id: {post_id}")
     return post_id
 
 def dorm_notice(url, cat):
@@ -65,9 +72,9 @@ def dorm_notice(url, cat):
         'body > table > tr > td:nth-child(2) > table > tr:nth-child(4) > td:nth-child(2) > table > tr:nth-child(4) > td.ForPrint > table > form > tr > td > table > tr > td:nth-child(10)'
     )
 
-    # titles_test = soup.select(
-    #     'body > table > tr > td:nth-child(2) > table > tr:nth-child(4) > td:nth-child(2) > table > tr:nth-child(4) > td.ForPrint > table > form > tr > td > table > tr'    )
-    # print(titles_test)
+    tr_list = soup.select(
+        'body > table > tr > td:nth-child(2) > table > tr:nth-child(4) > td:nth-child(2) > table > tr:nth-child(4) > td.ForPrint > table > form > tr > td > table > tr'    )
+    # print(titles_test) #항목 하나당 tr 하나
 
     # titles_can = soup.select('a')
     # titles = soup.find('a', {'href'})
@@ -75,47 +82,40 @@ def dorm_notice(url, cat):
 
     # titles = {}
     # temp_frame = pd.DataFrame(columns=['id','title','link','cat','date'])
-
-    date_list = []
-    info_list = []
-    for date in dates_candidates:
-        date_text = date.text
-        if is_date(date_text, fuzzy=False):
-            # temp_frame['date'] += date_text
-            date_list.append(date_text)
-            if __debug__:
-                print(date_text)
-
-    for title in titles_candidates:
-        href = title.get('href')
-        if ('javascript:viewBoard(document.BoardForm' in href):
-            # post_id = int(href[-8:-3])
-            post_id = post_id_from_javascript(href)
-            link = f'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no={post_id}&s_type=1&s_text='
-            # temp_frame['link'] += link
-            # temp_frame['title'] += title.text
-            # temp_frame['cat'] += 'dorm_total'
-            info_list.append([post_id, title.text, link, cat])
-            # if __debug__:
-            #     parsed = urlparse(link)
-            #     print(parse_qsl(parsed.query)[2][1])
-
-    length = len(info_list)
-    if length == len(date_list):
-
-        for i in range(length):
-            cur.execute(f'''SELECT id FROM dorm WHERE cat = '{info_list[i][3]}' ''')  # 테이블에서 데이터 선택하기
-            ids = cur.fetchall()
-            if info_list[i][0] not in ids:
-                tel_bot(category[cat],info_list[i][1],info_list[i][2],date_list[i])
-                cur.execute('''INSERT OR IGNORE INTO dorm VALUES(?,?,?,?,?)''',
-                            (info_list[i][0], info_list[i][1], info_list[i][2], info_list[i][3], date_list[i]))
-            else:
+    for tr in tr_list: #각 게시글 당
+        td_list = tr.select('td') #td 리스트 생성
+        if __debug__:
+            print(f'td_list: {td_list}')
+        for td in td_list:
+            a = td.find('a')
+            try:
+                href = a.get('href')
+            except Exception:
+                href = ''
+            if 'javascript:viewBoard(document.BoardForm' in href:
+                title = a.text
+                post_id = post_id_from_javascript(href)
+                link = f'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no={post_id}&s_type=1&s_text='
+            if is_date(td.text):
+                date = td.text
                 if __debug__:
-                    print("중복")
-            # print(title.text)
-            # print(
-            #     f'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no={titles[title]}&s_type=1&s_text=')
+                    print(f'날짜: {td.text}')
+
+        try:
+            if post_id:
+                cur.execute(f'''SELECT id FROM posts WHERE cat = '{cat}' ''')  # 테이블에서 데이터 선택하기
+                ids = cur.fetchall()
+                if post_id not in ids:
+                    tel_bot(category[cat],title,link,date)
+                    cur.execute('''INSERT OR IGNORE INTO posts VALUES(?,?,?,?,?)''',
+                                (post_id, title, link, cat, date))
+                else:
+                    if __debug__:
+                        print(f"id {post_id} 중복")
+            post_id = 0 #이전 id 초기화
+        except NameError: #post_id를 가져오지 못했을 때
+            pass
+
 
 
 def tel_bot(cat, title, link, date):
@@ -127,12 +127,15 @@ def tel_bot(cat, title, link, date):
 
 <a href="{link}">게시글 바로가기</a>
     """
+    # if __debug__:
+    #     bot.sendMessage(chat_id=id, text=text, parse_mode="html")
+        # id_channel = bot.sendMessage(chat_id='@korea_noti_test', text="I'm bot").chat_id  # @korea_noti_test 으로 메세지를 보냅니다.
+        # print(id_channel)
+        # with open('id_test.txt','w') as f:
+        #     f.write(str(id_channel))
+    # else:
     bot.sendMessage(chat_id=id, text=text, parse_mode="html")
 
-    # id_channel = bot.sendMessage(chat_id='@korea_notice', text="I'm bot").chat_id  # @korea_notice 으로 메세지를 보냅니다.
-    # print(id_channel)
-    # with open('id.txt','w') as f:
-    #     f.write(str(id_channel))
 
 def coi_notice():
     URL_GENERAL = 'https://info.korea.ac.kr/info/board/notice_under.do'
@@ -141,9 +144,9 @@ def coi_notice():
 
     response = get_request(URL_GENERAL)
     soup = BeautifulSoup(response.content, "html.parser")
-    titles = soup.select('#jwxe_main_content > div > div > div > div.t_list.test20200330 > ul > li')
+    li_list = soup.select('#jwxe_main_content > div > div > div > div.t_list.test20200330 > ul > li')
     if __debug__:
-        print(titles)
+        print(f"li_list: {li_list}")
 
 
 if __name__ == '__main__':
@@ -151,8 +154,12 @@ if __name__ == '__main__':
         my_token = f.read() # 토큰을 설정해 줍니다.
     bot = telegram.Bot(token=my_token)  # 봇에 연결합니다.
 
-    with open('id.txt', 'r') as f:
-        id = int(f.read())
+    if __debug__:
+        with open('id_test.txt', 'r') as f:
+            id = int(f.read())
+    else:
+        with open('id.txt', 'r') as f:
+            id = int(f.read())
 
     try:
         dorm_notice_init()
