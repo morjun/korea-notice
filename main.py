@@ -122,7 +122,7 @@ def coi_notice_init():
 
 
 def coi_notice(url, cat):
-    category = {'coi_notice':'정보대학 - 공지사항', 'coi_event':'정보대학 - 행사 및 소식', 'coi_career':'정보대학 - 진로정보'}
+    category = {'coi_notice':'정보대학 - 공지사항 ( 학부 )', 'coi_event':'정보대학 - 행사 및 소식', 'coi_career':'정보대학 - 진로정보'}
 
     response = get_request(url)
     soup = BeautifulSoup(response.content, "html.parser")
