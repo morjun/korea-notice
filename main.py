@@ -202,8 +202,8 @@ if __name__ == '__main__':
 
     try:
         dorm_notice_init()
+        coi_notice_init()
         if __debug__:
-            coi_notice_init()
             link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
             link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
             # tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
