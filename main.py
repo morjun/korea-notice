@@ -7,6 +7,7 @@ from urllib.parse import parse_qsl
 import sqlite3
 import os
 from fake_useragent import UserAgent
+from time import sleep
 
 if __debug__:
     import pandas as pd
@@ -124,7 +125,15 @@ def tel_bot(cat, title, link, date):
     #     f.write(str(id_channel))
     # else:
 
-    bot.sendMessage(chat_id=id, text=text, parse_mode="html")
+    while True:
+        try:
+            bot.sendMessage(chat_id=id, text=text, parse_mode="html")
+            break
+        except Exception as flood:
+            print(f'Error: {flood}, waiting...')
+            flood = str(flood).split(' ')[-2]
+            sleep(float(flood))
+            continue
 
 
 def coi_notice():
