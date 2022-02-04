@@ -428,19 +428,17 @@ if __name__ == '__main__':
                 dorm_notice_init()
                 coi_notice()
                 studyabroad()
-                portal()
-        else:
-            dorm_notice_init()
-            coi_notice()
-            studyabroad()
-            portal()
-        if __debug__:
             portal()
             link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
             link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
             # tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
             display_data = pd.read_sql_query("SELECT * FROM posts", conn)
             print(display_data)
+        else:
+            dorm_notice_init()
+            coi_notice()
+            studyabroad()
+            portal()
     finally:
         conn.commit()
         conn.close()
