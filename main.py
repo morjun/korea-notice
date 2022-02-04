@@ -107,7 +107,8 @@ def tel_bot(cat, title, link, date):
 <b>게시일</b> {date}"""
 
     is_portal = cat.find('포털')
-    print(is_portal)
+    if __debug__:
+        print(is_portal)
 
     if is_portal != -1:
         text += f'\n\n<a href="{link}">포털 바로가기</a>'
