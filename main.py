@@ -79,7 +79,8 @@ def dorm_notice(url, cat):
         try:
             if post_id:
                 post = [post_id, title, link, cat, date]
-                print_info(post)
+                if __debug__:
+                    print_info(post)
                 post_id = post_id_validate(category, post)  # 이전 id 초기화
         except NameError:  # post_id를 가져오지 못 했을 때
             pass
@@ -254,7 +255,6 @@ def portal():
 
         login_cred = {ID_KEY: login_cred_list[0], PW_KEY: login_cred_list[1], '_csrf': _csrf, dummy: dummy}
         login_info = {**login_cred, **login_info}
-        print(f'request body: {login_info}')
 
         # 로그인
         if __debug__:
