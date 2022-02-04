@@ -416,10 +416,12 @@ if __name__ == '__main__':
                 dorm_notice_init()
                 coi_notice()
                 studyabroad()
+                portal()
         else:
             dorm_notice_init()
             coi_notice()
             studyabroad()
+            portal()
         if __debug__:
             portal()
             link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
