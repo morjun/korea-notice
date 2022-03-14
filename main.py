@@ -102,20 +102,35 @@ def post_id_validate(category, post):
 
 
 def tel_bot(cat, title, link, date):
+    title = title.replace('&', '&amp;')
+    title = title.replace('<', '&lt;').replace('>','&gt;')
     text = f"""
     <b>{cat}</b>
-    
+
 <b>제목</b> {title}
 <b>게시일</b> {date}"""
 
+#     text = f"""
+# *{cat}*
+#
+# *제목* {title}
+# *게시일* {date}"""
+
+    # text = text.replace("-", "\\-") #markdown parsing을 위해
+    # print(text)
+
     is_portal = cat.find('포털')
-    if __debug__:
-        print(is_portal)
+    # if __debug__:
+    #     print(is_portal)
+
 
     if is_portal != -1:
         text += f'\n\n<a href="{link}">포털 바로가기</a>'
+        # text += f'\n\n[포털 바로가기]({link})'
     else:
         text += f'\n\n<a href="{link}">게시글 바로가기</a>'
+        # text += f'\n\n[게시글 바로가기]({link})'
+
 
     # if __debug__:
     #     bot.sendMessage(chat_id=id, text=text, parse_mode="html")
@@ -127,7 +142,8 @@ def tel_bot(cat, title, link, date):
 
     while True:
         try:
-            bot.sendMessage(chat_id=id, text=text, parse_mode="html")
+            bot.sendMessage(chat_id=id, text=text, parse_mode="html") #제목에 <> 등 들어가면 문제 발생함
+            # bot.sendMessage(chat_id=id, text=text, parse_mode="MarkdownV2") #html보다도 고려해야 할 예외가 많음
             break
         except Exception as flood:
             print(f'Error: {flood}, waiting...')
