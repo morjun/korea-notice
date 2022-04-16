@@ -145,10 +145,11 @@ def tel_bot(cat, title, link, date):
             bot.sendMessage(chat_id=id, text=text, parse_mode="html") #제목에 <> 등 들어가면 문제 발생함
             # bot.sendMessage(chat_id=id, text=text, parse_mode="MarkdownV2") #html보다도 고려해야 할 예외가 많음
             break
-        except Exception as flood:
-            print(f'Error: {flood}, waiting...')
-            flood = str(flood).split(' ')[-2]
-            sleep(float(flood))
+        except Exception as tel_error:
+            print(f'Error: {tel_error}, waiting...')
+            if 'Flood control exceeded' in tel_error:
+                flood = str(tel_error).split(' ')[-2]
+                sleep(float(flood))
             continue
 
 
@@ -441,7 +442,7 @@ if __name__ == '__main__':
     try:
         if __debug__:
             if not FIDDLER:
-                dorm_notice_init()
+                # dorm_notice_init()
                 coi_notice()
                 studyabroad()
             portal()
@@ -451,7 +452,7 @@ if __name__ == '__main__':
             display_data = pd.read_sql_query("SELECT * FROM posts", conn)
             print(display_data)
         else:
-            dorm_notice_init()
+            # dorm_notice_init()
             coi_notice()
             studyabroad()
             portal()
