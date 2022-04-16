@@ -147,7 +147,7 @@ def tel_bot(cat, title, link, date):
             break
         except Exception as tel_error:
             print(f'Error: {tel_error}, waiting...')
-            if 'Flood control exceeded' in tel_error:
+            if 'Flood control exceeded' in str(tel_error):
                 flood = str(tel_error).split(' ')[-2]
                 sleep(float(flood))
             continue
