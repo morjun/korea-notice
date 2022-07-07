@@ -40,6 +40,13 @@ def dorm_notice_init():
     for dorm_key in dorm_list.keys():
         dorm_notice(dorm_key, dorm_list[dorm_key])
 
+def dorm_notice_init_new():
+    dorm_list = {'https://dorm.korea.ac.kr/front/board/1/post': 'dorm-total',}
+                 # 'https://dorm.korea.ac.kr:42305/src/board/list.php?code=notice': 'dorm-oldgik',
+                 # 'https://dorm.korea.ac.kr:42305/src/board/list.php?code=notice1': 'dorm-newgik'}
+    for dorm_key in dorm_list.keys():
+        dorm_notice_new(dorm_key, dorm_list[dorm_key])
+
 
 def get_post_id_from_javascript(href):
     post_id = int(href.split("'")[1])
@@ -76,6 +83,51 @@ def dorm_notice(url, cat):
             # 게시일 가져오기
             if is_date(td.text):
                 date = td.text
+
+        try:
+            if post_id:
+                post = [post_id, title, link, cat, date]
+                if __debug__:
+                    print_info(post)
+                post_id = post_id_validate(category, post)  # 이전 id 초기화
+        except NameError:  # post_id를 가져오지 못 했을 때
+            pass
+
+def dorm_notice_new(url, cat):
+    response = requests.get(url)
+    category = {}
+
+    # soup = BeautifulSoup(response.content.decode('euc-kr', 'replace'), "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")
+    # print(soup)
+
+    tr_list = soup.select(
+        'section > div > article.right-content.content_layout_area')
+    tr_list = tr_list[0].select('section > div > article:nth-child(3) > table > tbody > tr')
+
+
+    for tr in tr_list:  # 각 게시글 당
+        # td_list = tr.select('td')  # td 리스트 생성
+
+        td_title = tr.find('td', {'class': 'title'})
+        td_date = tr.find('td', {'class': 'date'})
+
+        cat = tr.select('td:nth-child(2) > p')[0].text
+        if cat:
+            cat = f'안암학사 - {cat}'
+        else:
+            cat = '안암학사 - 전체'
+
+        if cat not in category.keys():
+            category[cat] = cat
+
+        a = td_title.find('a')
+        href = a.get('href')
+        title = a.text
+        date = td_date.text
+        post_id = os.path.split(href)[1][0:-1] # ? 제외
+
+        link = f'{url}/{post_id}?'
 
         try:
             if post_id:
@@ -442,17 +494,17 @@ if __name__ == '__main__':
     try:
         if __debug__:
             if not FIDDLER:
-                # dorm_notice_init()
-                coi_notice()
-                studyabroad()
-            portal()
-            link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
-            link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
+                dorm_notice_init_new()
+                # coi_notice()
+                # studyabroad()
+            # portal()
+            # link = 'https://telegram.org/blog/link-preview#:~:text=Once%20you%20paste%20a%20URL,now%20shown%20for%20most%20websites.'
+            # link2 = 'https://dorm.korea.ac.kr:42305/src/board/view.php?page=1&code=notice2&mode=&no=40659&s_type=1&s_text='
             # tel_bot('테스트', '봇 테스트', link2, '2022-02-02')
             display_data = pd.read_sql_query("SELECT * FROM posts", conn)
-            print(display_data)
+            # print(display_data)
         else:
-            # dorm_notice_init()
+            dorm_notice_init_new()
             coi_notice()
             studyabroad()
             portal()
