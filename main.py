@@ -399,6 +399,8 @@ def portal_posts_process(url, cat, category, portletIds, session, headers):
 
     li_list = soup.select('ul > li')
     for li in li_list:
+        if "데이터가 없습니다" in li.text:
+            break
         span = li.find('span', {'class': 'txt_right'})  # find: 첫번쨰 occurence만 단일 객체로 반환
         # span_inside_span = span.find('span')
         # print(span_inside_span)
