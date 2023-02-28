@@ -484,7 +484,7 @@ if __name__ == '__main__':
 
     # 텔레그램 봇 초기화
     with open('token.ini', 'r') as f:
-        my_token = f.read()  # 토큰을 설정해 줍니다.
+        my_token = str(f.read()).strip() # 토큰을 설정해 줍니다.
     bot = telegram.Bot(token=my_token)  # 봇에 연결합니다.
     if __debug__:
         with open('id_test.txt', 'r') as f:
