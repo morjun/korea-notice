@@ -39,7 +39,7 @@ class botAgent:
         self.conn, self.cur = self.connectDB()
 
         idTxt = "id_test.txt" if __debug__ else "id.txt"
-        self.telBot, self.chatId = self.connectTelBot("token.ini", idTxt)
+        self.telBotApp, self.chatId = self.connectTelBot("token.ini", idTxt)
 
         self.FIDDLER = False
         if __debug__:
@@ -55,11 +55,11 @@ class botAgent:
     def connectTelBot(self, tokenTxt: str, idTxt: str):
         with open(tokenTxt, 'r') as f:
             my_token = str(f.read()).strip() # 토큰을 설정해 줍니다.
-            telBot = ApplicationBuilder().token(my_token).build()  # 봇 어플리케이션 오브젝트 생성.
+            telBotApp = ApplicationBuilder().token(my_token).build()  # 봇 어플리케이션 오브젝트 생성.
             with open(idTxt, 'r') as f:
                 chatId = int(f.read())
         
-        return telBot, chatId
+        return telBotApp, chatId
     
     def connectDB(self):
         # db 연결
@@ -209,8 +209,8 @@ class botAgent:
         text = f"""
         <b>{cat}</b>
 
-    <b>제목</b> {title}
-    <b>게시일</b> {date}"""
+<b>제목</b> {title}
+<b>게시일</b> {date}"""
 
         is_portal = cat.find('포털')
         if is_portal != -1:
@@ -220,7 +220,7 @@ class botAgent:
 
         while True:
             try:
-                await self.telBot.bot.send_message(chat_id=self.chatId, text=text, parse_mode="html") #제목에 <> 등 들어가면 문제 발생함
+                await self.telBotApp.bot.send_message(chat_id=self.chatId, text=text, parse_mode="html") #제목에 <> 등 들어가면 문제 발생함
                 break
             except Exception as tel_error:
                 print(f'Error: {tel_error}, waiting...')
