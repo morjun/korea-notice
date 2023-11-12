@@ -1,5 +1,18 @@
-/.idea
+# Default ignored files
+/.idea/shelf/
+/.idea/workspace.xml
+# Editor-based HTTP Client requests
+/.idea/httpRequests/
+# Datasource local storage ignored files
+/.idea/dataSources/
+/.idea/dataSources.local.xml
+
 *.db
 *.ini
 *.txt
 /__pycache__
+.idea/.name
+.idea/Korea-notice.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/inspectionProfiles/profiles_settings.xml
