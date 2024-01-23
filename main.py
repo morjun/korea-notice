@@ -339,7 +339,7 @@ class botAgent:
         }
 
         with requests.Session() as session:
-            response = session.get(LOGIN_HOME)
+            response = session.get(LOGIN_HOME, headers=headers_portal_login)
             soup = BeautifulSoup(response.content, 'html.parser')
             span = soup.find('span', {'class': 'input'})
 
