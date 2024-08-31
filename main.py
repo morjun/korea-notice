@@ -4,12 +4,14 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 
 import requests
 from bs4 import BeautifulSoup
+#pip install beautifulsoup4
 import datetime
 from urllib.parse import urlparse
 from urllib.parse import parse_qsl
 import sqlite3
 import os
 from fake_useragent import UserAgent
+#pip install fake-useragent
 from time import sleep
 
 if __debug__:
@@ -48,7 +50,7 @@ class botAgent:
     
     def fiddlerSet(self):
             proxies = {"http": "http://127.0.0.1:8888", "https": "http:127.0.0.1:8888"}
-            verify = r"FiddlerRoot.pem"
+            verify = r"FiddlerRoot.cer"
 
             return proxies, verify
 
@@ -231,40 +233,51 @@ class botAgent:
 
     async def coi_notice(self):
         URL_GENERAL = 'https://info.korea.ac.kr/info/board/notice_under.do'
+        URL_SCHOLAR = 'https://info.korea.ac.kr/info/board/scholarship_under.do'
         URL_EVENT = 'https://info.korea.ac.kr/info/board/news.do'
-        URL_CAREER = 'https://info.korea.ac.kr/info/board/course.do'
-        coi_list = {URL_GENERAL: 'coi_notice', URL_EVENT: 'coi_event', URL_CAREER: 'coi_career'}
-        category = {'coi_notice': '정보대학 - 공지사항 ( 학부 )', 'coi_event': '정보대학 - 행사 및 소식', 'coi_career': '정보대학 - 진로정보'}
+        URL_CAREER = 'https://info.korea.ac.kr/info/board/course_job.do'
+        coi_list = {URL_GENERAL: 'coi_notice', URL_EVENT: 'coi_event', URL_CAREER: 'coi_career', URL_SCHOLAR: 'coi_scholar'}
+        category = {'coi_notice': '정보대학 - 공지사항 ( 학부 )', 'coi_event': '정보대학 - 행사 및 소식', 'coi_career': '정보대학 - 진로정보', 'coi_scholar': '정보대학 - 장학공지'}
         session = requests.Session()
         for coi_key in coi_list.keys():
             await self.modern_board_posts_process(coi_key, category, coi_list[coi_key], session)
 
     async def modern_board_posts_process(self, url, category, cat, session):
         response = session.get(url)
+        if __debug__:
+            if response.status_code != 200:
+                print(f"Error: {response.status_code} while fetching {url}")
+                exit(-1)
         soup = BeautifulSoup(response.content, "html.parser")
-        li_list = soup.select('#jwxe_main_content > div > div > div > div.t_list.test20200330 > ul > li')
-        for li in li_list:
-            span = li.find('span')  # find: 첫번쨰 occurence만 단일 객체로 반환
-            span.i.extract()  # i 태그 제외
-            date = str(span.text)
-            date = date.replace('.', '-')
+        table = soup.select('table.w > tbody')
+        table = table[0].select('tr')
+        if __debug__:
+            print(f"리스트: {table}")
+        for tr in table:
+            td = tr.select('td')
 
-            a = li.find('a')
+            a = td[1].find('a')
             title = a.text
-
             href = a.get('href')
             href_parsed = parse_qsl(href)
             link = (url + href)
-
             post_id = int(href_parsed[1][1])
+
+            date = str(td[-1].text)
+            date = date.replace('.', '-')
+
             try:
                 if post_id:
                     post = [post_id, title, link, cat, date]
                     if __debug__:
                         self.print_info(post)
                     post_id = await self.post_id_validate(category, post)
+                else:
+                    if __debug__:
+                        print(f"post_id가 없습니다: {post}")
             except NameError:  # post_id를 가져오지 못 했을 때
-                pass
+                if __debug__:
+                    print(NameError)
 
 
     def get_login_info(self, list=False):
@@ -294,7 +307,7 @@ class botAgent:
             login_request = session.post(LOGIN_URL, data=login_info)
             if __debug__:
                 if login_request.status_code == 200:
-                    print("로그인 성공")
+                    print("[국제교류처] 로그인 성공")
 
             for url_key in studyabroad_url.keys():
                 await self.modern_board_posts_process(url_key, category, studyabroad_url[url_key], session)
@@ -356,14 +369,15 @@ class botAgent:
             login_info = {**login_cred, **login_info}
 
             # 로그인
-            if __debug__:
-                if self.FIDDLER:
-                    login_request = session.post(LOGIN_URL, headers=headers_portal_login, data=login_info, proxies=self.proxies,
-                                                verify=self.verify)
-                else:
-                    login_request = session.post(LOGIN_URL, headers=headers_portal_login, data=login_info)
+            if __debug__ and self.FIDDLER:
+                login_request = session.post(LOGIN_URL, headers=headers_portal_login, data=login_info, proxies=self.proxies,
+                                            verify=self.verify)
             else:
                 login_request = session.post(LOGIN_URL, headers=headers_portal_login, data=login_info)
+            
+            if __debug__:
+                if login_request.status_code == 200:
+                    print("[포탈] 로그인 성공")
 
             for board_key in boards.keys():
                 path = f'{PATH_BASE}?kind={str(boards[board_key])}'
@@ -403,11 +417,17 @@ class botAgent:
                 response = session.post(url_base_face, headers=headers, data=data)
         else:
             response = session.post(url_base_face, headers=headers, data=data)
+        if __debug__:
+            if response.status_code != 200:
+                print(f"Error: {response.status_code} while fetching {url_base_face}")
+                exit(-1)
         soup = BeautifulSoup(response.content.decode('utf-8', 'replace'), "html.parser")
 
         li_list = soup.select('ul > li')
         for li in li_list:
             if "데이터가 없습니다" in li.text:
+                if __debug__:
+                    print(f"{category[cat]}: 데이터가 없습니다.")
                 break
             span = li.find('span', {'class': 'txt_right'})  # find: 첫번쨰 occurence만 단일 객체로 반환
             span.span.extract()

@@ -16,3 +16,6 @@
 .idea/misc.xml
 .idea/modules.xml
 .idea/inspectionProfiles/profiles_settings.xml
+FiddlerRoot.pem
+notice_test.db-journal
+.idea/vcs.xml
